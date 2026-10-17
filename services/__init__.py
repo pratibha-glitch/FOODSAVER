@@ -1,0 +1,1 @@
+# SmartPlate AI Services Package

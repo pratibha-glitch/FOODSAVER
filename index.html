@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPlate AI - AI-Driven Canteen Waste Reduction & Logistics</title>
+  <meta name="description" content="SmartPlate AI: AI-Driven Canteen Waste Reduction & Logistics for College Campuses, supporting UN SDG 2 (Zero Hunger) through shelf-life prediction and instant volunteer broadcast.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-group">
+        <div class="logo-icon">🍽️</div>
+        <div class="logo-text">
+          <h1>SmartPlate AI</h1>
+          <p>AI-Driven Canteen Waste Reduction & Logistics</p>
+        </div>
+      </div>
+      <div class="sdg-badge-group">
+        <span class="sdg-badge">🎯 UN SDG 2: Zero Hunger</span>
+        <div class="network-badge">
+          <span class="pulse-dot"></span>
+          <span>45 Active NSS Volunteers</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- Impact & Live Metrics Banner -->
+    <section class="stats-banner" aria-label="Campus Impact Metrics">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #ecfdf5; color: #15803d;">🍱</div>
+        <div>
+          <div class="stat-val"><span id="meals-saved-count">368</span>+</div>
+          <div class="stat-label">Meals Saved This Month</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #fefce8; color: #ca8a04;">⏳</div>
+        <div>
+          <div class="stat-val">3.8 hrs</div>
+          <div class="stat-label">Avg. Safe Distribution Window</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">🤝</div>
+        <div>
+          <div class="stat-val">100%</div>
+          <div class="stat-label">Zero Food Waste Target</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">🌱</div>
+        <div>
+          <div class="stat-val">185 kg</div>
+          <div class="stat-label">CO₂ Emissions Prevented</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Grid: Canteen Staff Input Form + AI Results / WhatsApp Broadcast -->
+    <div class="dashboard-grid">
+
+      <!-- Column 1: Canteen Staff Logging Form -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">📝 Canteen Staff Food Logging</h2>
+          <p class="card-subtitle">Log cooked surplus meals immediately after meal hours for safety assessment.</p>
+        </div>
+
+        <!-- Quick Demo Presets for Presentation -->
+        <div class="preset-section">
+          <span class="preset-label">⚡ Quick Fill Demo Presets:</span>
+          <div class="preset-buttons">
+            <button type="button" class="btn-preset" onclick="applyPreset('dal-rice')">🍛 Dal & Rice</button>
+            <button type="button" class="btn-preset" onclick="applyPreset('roti-sabzi')">🫓 Roti & Sabzi</button>
+            <button type="button" class="btn-preset" onclick="applyPreset('kheer')">🥛 Kheer / Sweet</button>
+          </div>
+        </div>
+
+        <form id="surplusForm" onsubmit="event.preventDefault(); calculateAndAlert();">
+          
+          <!-- Food Item Name -->
+          <div class="form-group">
+            <label class="form-label" for="item">Food Item Name / Description <span class="req">*</span></label>
+            <input 
+              type="text" 
+              id="item" 
+              class="form-control" 
+              placeholder="e.g., Cooked Rice & Dal Makhani" 
+              required
+            >
+            <div class="input-hint">Specify whether food is freshly prepared or from buffet line</div>
+          </div>
+
+          <!-- Upload Surplus Food Photo with Instant Preview -->
+          <div class="form-group">
+            <label class="form-label" for="foodPhoto">📷 Upload Surplus Food Photo</label>
+            <div class="image-upload-wrapper">
+              <input 
+                type="file" 
+                id="foodPhoto" 
+                class="form-control" 
+                accept="image/*" 
+                onchange="handleImageUpload(event)"
+              >
+            </div>
+            
+            <!-- Instant Image Preview Container -->
+            <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+              <img id="imagePreview" src="" alt="Surplus Food Preview" class="image-preview">
+              <button type="button" class="btn-remove-img" onclick="removeImage()">✕ Remove Photo</button>
+            </div>
+            <div class="input-hint">Attach a photo for volunteer inspection and WhatsApp broadcast</div>
+          </div>
+
+          <!-- Food Category -->
+          <div class="form-group">
+            <label class="form-label" for="category">Food Category <span class="req">*</span></label>
+            <select id="category" class="form-control" required>
+              <option value="dry">Dry Item (Roti, Dry Sabzi, Breads)</option>
+              <option value="wet" selected>Wet / Curry (Dal, Gravy, Rice)</option>
+              <option value="dairy">Dairy / Sweets (Paneer, Kheer, Milk)</option>
+            </select>
+
+            <!-- Category AI Rule Chips -->
+            <div class="category-rules">
+              <div class="rule-chip" data-cat="dry" onclick="selectCategoryChip('dry')">
+                <span>🌾 Dry Item</span>
+                <span class="chip-time" style="color: #15803d;">5 Hours Expiry</span>
+              </div>
+              <div class="rule-chip active" data-cat="wet" onclick="selectCategoryChip('wet')">
+                <span>🍲 Wet / Curry</span>
+                <span class="chip-time" style="color: #b45309;">3 Hours Expiry</span>
+              </div>
+              <div class="rule-chip" data-cat="dairy" onclick="selectCategoryChip('dairy')">
+                <span>🥛 Dairy / Sweet</span>
+                <span class="chip-time" style="color: #dc2626;">2 Hours Expiry</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="form-group">
+            <label class="form-label" for="quantity">Approx. Quantity <span class="req">*</span></label>
+            <input 
+              type="text" 
+              id="quantity" 
+              class="form-control" 
+              placeholder="e.g., 6 kg / ~20 plates" 
+              required
+            >
+          </div>
+
+          <!-- Pickup Location -->
+          <div class="form-group">
+            <label class="form-label" for="location">Pickup Location on Campus <span class="req">*</span></label>
+            <input 
+              type="text" 
+              id="location" 
+              class="form-control" 
+              placeholder="e.g., Central Mess - Counter 2" 
+              required
+            >
+            <div class="input-hint">Include building, floor or specific counter for volunteers</div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="btnBroadcast">
+              <span>🚀 Calculate Shelf-Life & Broadcast</span>
+            </button>
+            <button type="button" class="btn-secondary" onclick="resetForm()">
+              Reset
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Column 2: AI Safety Assessment & WhatsApp Broadcast Simulation -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">🤖 AI Broadcast & Volunteer Dispatch</h2>
+          <p class="card-subtitle">Real-time shelf-life countdown and simulated instant WhatsApp alert.</p>
+        </div>
+
+        <div id="resultsContainer">
+          <!-- Initial Placeholder State -->
+          <div class="preview-placeholder">
+            <div class="icon">🥗</div>
+            <h3 style="font-size: 1.05rem; color: var(--text-main); margin-bottom: 6px;">Ready to Analyze Surplus</h3>
+            <p style="font-size: 0.85rem; max-width: 320px; color: var(--text-muted);">
+              Enter surplus meal details, optionally upload a photo, and click <b>Calculate Shelf-Life & Broadcast</b> to view the live volunteer dispatch & countdown!
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Active Campus Surplus Logs Table -->
+    <section class="logs-section">
+      <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h2 class="card-title">📋 Live Campus Surplus Food Board</h2>
+            <p class="card-subtitle">Real-time status of logged food items available for student volunteers to claim.</p>
+          </div>
+          <span style="font-size: 0.75rem; background: #ecfdf5; color: #15803d; padding: 4px 10px; border-radius: 9999px; font-weight: 600; border: 1px solid #86efac;">
+            ● Live Sync Active
+          </span>
+        </div>
+
+        <div class="logs-table-wrapper">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Food Item & Quantity</th>
+                <th>Category</th>
+                <th>Pickup Location</th>
+                <th>Safe Expiry</th>
+                <th>Status</th>
+                <th>Volunteer Action</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <!-- Dynamically rendered via script.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Project Information / SDG Zero Hunger Highlights -->
+    <footer class="footer">
+      <p>
+        <strong>SmartPlate AI</strong> — College Project Submission | Supporting <strong>UN SDG Goal 2: Zero Hunger</strong>
+      </p>
+      <p style="margin-top: 4px; color: #94a3b8;">
+        AI-Driven Canteen Waste Reduction & Logistics • Automated Shelf-Life AI Rules: Dry Food (5 hrs) • Wet/Curry (3 hrs) • Dairy (2 hrs)
+      </p>
+    </footer>
+
+  </main>
+
+  <!-- External Application Logic -->
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPlate AI — AI-Powered Campus Food Waste Reduction Platform (SDG 2: Zero Hunger)</title>
+  <meta name="description" content="SmartPlate AI connects college canteens and verified student volunteers to coordinate surplus food collection before it goes to waste. Target: UN SDG 2 Zero Hunger.">
+  <link rel="stylesheet" href="/static/css/smartplate.css">
+</head>
+<body>
+
+  <!-- Unified Clean Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <!-- Left: Clean Brand Area & Badges -->
+      <div class="header-brand-wrap">
+        <a href="/" class="brand-group">
+          <div class="brand-icon">🍽️</div>
+          <div class="brand-info">
+            <h1>SmartPlate AI</h1>
+            <p>Turn Surplus Food into Shared Meals</p>
+          </div>
+        </a>
+
+        <div class="badges-group">
+          <span class="sdg-badge">🎯 UN SDG 2: Zero Hunger</span>
+          <div class="network-badge">
+            <span class="pulse-dot"></span>
+            <span id="headerVolunteersBadge">45 Active Volunteers</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Role Switcher & User Status -->
+      <div class="header-actions-wrap">
+        <!-- Evaluator Demo Role Switcher -->
+        <div class="evaluator-switcher">
+          <span class="evaluator-pill">⚡ Evaluator Demo View</span>
+          <div class="demo-buttons">
+            <button type="button" class="demo-btn active" data-role="admin" onclick="Auth.switchDemoUser('admin')">👑 Admin</button>
+            <button type="button" class="demo-btn" data-role="staff" onclick="Auth.switchDemoUser('staff')">👨‍🍳 Canteen Staff</button>
+            <button type="button" class="demo-btn" data-role="volunteer" onclick="Auth.switchDemoUser('volunteer')">🤝 Verified Volunteer</button>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <!-- In-app notifications button -->
+          <button type="button" class="notif-btn" onclick="App.openNotifications()" title="In-App Volunteer Broadcasts">
+            <span>🔔</span>
+            <span class="notif-badge" id="notifCountBadge" style="display: none;">0</span>
+          </button>
+
+          <!-- Current User Profile & Sign Out -->
+          <div id="userProfileContainer"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Role Navigation Tabs (Strict Role-Based Visibility) -->
+  <nav class="tab-nav">
+    <div class="tab-nav-inner">
+      <div class="tab-item" id="tab-volunteer-feed" data-tab="volunteer-feed" onclick="App.switchTab('volunteer-feed')">
+        <span id="label-feed-tab">🍱 Available Food Feed</span>
+      </div>
+      <div class="tab-item" id="tab-staff" data-tab="staff-dashboard" onclick="App.switchTab('staff-dashboard')">
+        <span>📝 Canteen Staff Logging</span>
+      </div>
+      <div class="tab-item" id="tab-my-pickups" data-tab="my-pickups" onclick="App.switchTab('my-pickups')">
+        <span>🤝 My Claimed Pickups</span>
+      </div>
+      <div class="tab-item" id="tab-admin" data-tab="admin-dashboard" onclick="App.switchTab('admin-dashboard')">
+        <span>⚙️ Admin & Impact Metrics</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Application Body Views -->
+  <main class="main-content">
+
+    <!-- ======================================================================
+         VIEW 1: VOLUNTEER DISCOVERY FEED
+         ====================================================================== -->
+    <section id="view-volunteer-feed" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">🍱 Available Campus Surplus Meals</h2>
+          <p class="section-desc">Real-time surplus listings verified by canteen staff. Ranked by logistical urgency priority.</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="Volunteer.loadAvailableListings()">🔄 Refresh Feed</button>
+      </div>
+
+      <!-- Filter Controls Bar -->
+      <div class="card" style="padding: 14px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 100px; gap: 10px; align-items: end;">
+          <div>
+            <label class="form-label" for="volunteerFilterLocation">Filter by Location</label>
+            <select id="volunteerFilterLocation" class="form-control" onchange="Volunteer.loadAvailableListings()">
+              <option value="">All Campus Locations</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="volunteerFilterCategory">Filter by Category</label>
+            <select id="volunteerFilterCategory" class="form-control" onchange="Volunteer.loadAvailableListings()">
+              <option value="">All Food Categories</option>
+              <option value="cooked_rice">Cooked Rice</option>
+              <option value="curry_gravy">Curry / Gravy</option>
+              <option value="bread_roti">Bread / Roti</option>
+              <option value="fruit_veg">Fruit / Veg</option>
+              <option value="packaged_meal">Packaged Meals</option>
+              <option value="dairy_sweets">Dairy / Sweets</option>
+              <option value="snacks">Snacks</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="volunteerFilterUrgency">Urgency Window</label>
+            <select id="volunteerFilterUrgency" class="form-control" onchange="Volunteer.loadAvailableListings()">
+              <option value="">All Urgency Levels</option>
+              <option value="CRITICAL">Critical (&lt; 45m)</option>
+              <option value="HIGH">High (&lt; 90m)</option>
+              <option value="MODERATE">Moderate (&lt; 180m)</option>
+              <option value="LOW">Low (&gt; 180m)</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('volunteerFilterLocation').value=''; document.getElementById('volunteerFilterCategory').value=''; document.getElementById('volunteerFilterUrgency').value=''; Volunteer.loadAvailableListings();">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listings Grid -->
+      <div class="grid-3" id="volunteerListingsContainer">
+        <!-- Rendered dynamically by Volunteer.loadAvailableListings() -->
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 2: CANTEEN STAFF LOGGING & AI ASSISTANT
+         ====================================================================== -->
+    <section id="view-staff-dashboard" class="view-panel" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📝 Canteen Staff Food Logging & AI Assistant</h2>
+          <p class="section-desc">Upload a food photograph for automated vision suggestions. Human verification is strictly required before publication.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Left Column: Food Listing Form -->
+        <div class="card">
+          <div class="card-title">
+            <span>📝 Log Surplus Food & AI Vision Assistant</span>
+            <span class="user-role-tag staff">Canteen Staff</span>
+          </div>
+
+          <!-- Step 1: Presets & Photo -->
+          <div class="form-step-card">
+            <div class="form-step-title">
+              <span class="step-badge">1</span>
+              <span>Step 1: Quick Presets or Photo Upload</span>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+              <span style="font-size: 0.74rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">⚡ 1-Click Meal Presets:</span>
+              <div style="display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="Staff.applyDemoPreset('dal-rice')">🍛 Dal & Rice</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="Staff.applyDemoPreset('roti-sabzi')">🫓 Roti & Sabzi</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="Staff.applyDemoPreset('kheer')">🥛 Kheer / Sweet</button>
+              </div>
+            </div>
+
+            <!-- Image Upload / Drag Drop -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Upload Meal Photo (AI auto-detects category & portion bounds)</label>
+              <label class="upload-dropzone">
+                <input type="file" id="staffPhotoInput" accept="image/*" style="display: none;" onchange="Staff.handlePhotoUpload(event)">
+                <div style="font-size: 1.8rem; margin-bottom: 4px;">📸</div>
+                <div style="font-size: 0.82rem; font-weight: 600; color: var(--primary);">Click to upload or capture food photo</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Supported: JPG, PNG, WEBP (Max 8MB)</div>
+              </label>
+
+              <div class="preview-img-container" id="staffPhotoPreviewContainer" style="display: none;">
+                <img id="staffPhotoPreview" src="" alt="Food Preview" class="preview-img">
+              </div>
+            </div>
+
+            <!-- AI Vision Suggestions Box -->
+            <div id="staffAiSuggestionBox" class="ai-suggestion-box" style="display: none; margin-top: 12px; margin-bottom: 0;">
+              <!-- Populated dynamically via Staff.renderAiSuggestions -->
+            </div>
+          </div>
+
+          <!-- Listing Form Fields -->
+          <form id="staffListingForm" onsubmit="event.preventDefault(); Staff.submitListing('available');">
+            <!-- Step 2: Details -->
+            <div class="form-step-card">
+              <div class="form-step-title">
+                <span class="step-badge">2</span>
+                <span>Step 2: Food & Quantity Details</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="staffFoodName">Food Item Name / Description <span class="req">*</span></label>
+                <input type="text" id="staffFoodName" class="form-control" placeholder="e.g., Cooked Basmati Rice & Dal Makhani" required>
+              </div>
+
+            <div class="grid-2" style="gap: 12px;">
+              <div class="form-group">
+                <label class="form-label" for="staffCategory">Category <span class="req">*</span></label>
+                <select id="staffCategory" class="form-control" required>
+                  <option value="cooked_rice">Cooked Rice</option>
+                  <option value="curry_gravy">Curry / Gravy</option>
+                  <option value="bread_roti">Bread / Roti</option>
+                  <option value="fruit_veg">Fruit / Vegetables</option>
+                  <option value="packaged_meal">Packaged Meal Boxes</option>
+                  <option value="dairy_sweets">Dairy / Sweets</option>
+                  <option value="snacks">Snacks</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="staffLocationSelect">Canteen / Mess Location <span class="req">*</span></label>
+                <select id="staffLocationSelect" class="form-control" required></select>
+              </div>
+            </div>
+
+            <!-- Quantity & Estimation Source -->
+            <div style="display: grid; grid-template-columns: 2fr 1.5fr 2fr; gap: 10px; margin-bottom: 16px;">
+              <div>
+                <label class="form-label" for="staffQuantityValue">Quantity <span class="req">*</span></label>
+                <input type="number" step="0.1" id="staffQuantityValue" class="form-control" placeholder="e.g., 6.5" required>
+              </div>
+              <div>
+                <label class="form-label" for="staffQuantityUnit">Unit <span class="req">*</span></label>
+                <select id="staffQuantityUnit" class="form-control">
+                  <option value="kg">kg</option>
+                  <option value="portions">portions</option>
+                  <option value="meal_boxes">meal_boxes</option>
+                  <option value="plates">plates</option>
+                  <option value="pieces">pieces</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" for="staffQuantitySource">Quantity Source</label>
+                <select id="staffQuantitySource" class="form-control">
+                  <option value="measured">Measured (Scale)</option>
+                  <option value="manually_estimated">Manually Estimated</option>
+                  <option value="ai_estimated">AI Suggested</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2" style="gap: 12px;">
+              <div class="form-group">
+                <label class="form-label" for="staffStorageCondition">Storage Condition <span class="req">*</span></label>
+                <select id="staffStorageCondition" class="form-control">
+                  <option value="hot_holding">Hot Holding (&gt;60°C)</option>
+                  <option value="ambient_covered" selected>Ambient (Covered Container)</option>
+                  <option value="chilled_refrigerated">Chilled / Refrigerated (&lt;5°C)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="staffDeadlineInput">Logistical Pickup Deadline <span class="req">*</span></label>
+                <input type="datetime-local" id="staffDeadlineInput" class="form-control" required>
+                <div class="input-hint">Collection window (NOT food safety expiration)</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="staffAllergens">Known Allergens (if any)</label>
+              <input type="text" id="staffAllergens" class="form-control" placeholder="e.g., Dairy, Gluten, Nuts, Soy">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="staffNotes">Staff Notes / Instructions</label>
+              <textarea id="staffNotes" class="form-control" rows="2" placeholder="e.g., Service counter 2, clean transport containers required."></textarea>
+            </div>
+          </div> <!-- End Step 2 -->
+
+          <!-- Step 3: Food Safety & Publishing -->
+          <div class="form-step-card">
+            <div class="form-step-title">
+              <span class="step-badge">3</span>
+              <span>Step 3: Food Safety Checklist & Publishing</span>
+            </div>
+
+            <!-- Mandatory Human Safety & Handling Checklist -->
+            <div class="checklist-card" style="margin-bottom: 12px;">
+              <div class="checklist-title">🛡️ Mandatory Food Safety & Handling Checklist</div>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkSafetySensory" required>
+                <span><b>Sensory Check:</b> Food looks and smells fresh, with normal color, texture, and aroma.</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkSafetyTemp" required>
+                <span><b>Storage Check:</b> Food was kept in temperature-controlled or clean covered containers.</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkSafetyHygiene" required>
+                <span><b>Handling Check:</b> Staff confirmed safe hygienic handling prior to surplus collection.</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+              <button type="button" class="btn btn-secondary" onclick="Staff.submitListing('draft')">
+                💾 Save as Draft
+              </button>
+              <button type="submit" class="btn btn-primary" style="flex: 1;">
+                🚀 Confirm & Publish to Volunteers
+              </button>
+            </div>
+          </div>
+        </form>
+        </div>
+
+        <!-- Right Column: Staff Listings & History -->
+        <div class="card">
+          <div class="card-title">
+            <span>📋 My Canteen Surplus History</span>
+            <button class="btn btn-secondary btn-sm" onclick="Staff.loadStaffListings()">🔄 Refresh</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Food Item</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Deadline</th>
+                  <th>Status</th>
+                  <th>Volunteer</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staffListingsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 3: MY CLAIMED PICKUPS (VOLUNTEER)
+         ====================================================================== -->
+    <section id="view-my-pickups" class="view-panel" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">🤝 My Claimed Campus Pickups</h2>
+          <p class="section-desc">Manage your assigned pickups, update en-route status, and record verified physical collections.</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="Volunteer.loadMyPickups()">🔄 Refresh Pickups</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Food Item</th>
+                <th>Pickup Location</th>
+                <th>Pickup Deadline</th>
+                <th>Current Status</th>
+                <th>Collected Quantity</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="myPickupsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         VIEW 4: ADMIN DASHBOARD & SYSTEM METRICS
+         ====================================================================== -->
+    <section id="view-admin-dashboard" class="view-panel" style="display: none;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">⚙️ Admin & Impact Metrics</h2>
+          <p class="section-desc">Campus sustainability metrics, volunteer role authorization, and audit trail.</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="Admin.init()">🔄 Refresh All</button>
+      </div>
+
+      <!-- Key Impact Metrics Cards Grid -->
+      <div class="grid-4" style="margin-bottom: 24px;">
+        <div class="metric-card">
+          <div class="metric-icon">🍱</div>
+          <div>
+            <div class="metric-val" id="metricPickupsCount">0</div>
+            <div class="metric-label">Meals Saved</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">⚖️</div>
+          <div>
+            <div class="metric-val" id="metricKgCollected">0 kg</div>
+            <div class="metric-label">Food Collected (kg)</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">🌱</div>
+          <div>
+            <div class="metric-val" id="metricCo2PreventedTop">0 kg</div>
+            <div class="metric-label">CO₂ Diverted</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">👥</div>
+          <div>
+            <div class="metric-val" id="metricVerifiedVolunteers">0</div>
+            <div class="metric-label">Active Volunteers</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown & Defensible CO2 Impact -->
+      <div class="grid-2" style="margin-bottom: 24px;">
+        <div class="card">
+          <div class="card-title">🌱 Defensible CO₂ Emissions Avoidance</div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #15803d; margin: 8px 0;" id="metricCo2Prevented">0 kg</div>
+          <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;" id="metricCo2Methodology">
+            Calculated as verified collected kg * 2.5 kg CO₂-eq/kg (FAO methodology). Non-kg portions are excluded from this specific metric.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📦 Confirmed Collections by Unit</div>
+          <div id="metricUnitBreakdown" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 10px;">
+            Units are strictly tracked separately to prevent improper aggregation of mass and volume.
+          </div>
+        </div>
+      </div>
+
+      <!-- User Role Verification Table -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">
+          <span>👥 User Management & Role Verification</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Only verified volunteers can claim surplus food</span>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>User Details</th>
+                <th>Role</th>
+                <th>Location</th>
+                <th>Verification Status</th>
+                <th>Verification Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Operational Rules & Campus Locations Grid -->
+      <div class="grid-2" style="margin-bottom: 24px;">
+        <!-- Configurable Operational Deadlines -->
+        <div class="card">
+          <div class="card-title">⏳ Operational Collection Deadlines (Hours)</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">
+            Used to compute logistical collection windows for campus canteens.
+          </div>
+
+          <div class="grid-2" style="gap: 10px;">
+            <div class="form-group">
+              <label class="form-label" for="cfgHotHolding">Hot Holding (&gt;60°C)</label>
+              <input type="number" step="0.5" id="cfgHotHolding" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfgAmbientDry">Ambient Dry (Roti/Bread)</label>
+              <input type="number" step="0.5" id="cfgAmbientDry" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfgAmbientWet">Ambient Wet (Curry/Dal)</label>
+              <input type="number" step="0.5" id="cfgAmbientWet" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfgDairy">Dairy / Sweets</label>
+              <input type="number" step="0.5" id="cfgDairy" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfgMaxClaims">Max Concurrent Pickups per Volunteer</label>
+            <input type="number" id="cfgMaxClaims" class="form-control">
+          </div>
+
+          <button class="btn btn-primary" onclick="Admin.saveConfig()">💾 Save Operational Rules</button>
+        </div>
+
+        <!-- Campus Locations Manager -->
+        <div class="card">
+          <div class="card-title">🏢 Campus Canteens & Mess Locations</div>
+          <div id="adminLocationsList" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;"></div>
+
+          <form id="adminLocationForm" onsubmit="event.preventDefault(); Admin.addLocation();">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">+ Register New Campus Location</div>
+            <div class="grid-2" style="gap: 8px;">
+              <input type="text" id="locNameInput" class="form-control" placeholder="Location Name (e.g. Science Block Mess)" required>
+              <input type="text" id="locCodeInput" class="form-control" placeholder="Code (e.g. LOC-SCI)" required>
+            </div>
+            <div class="grid-2" style="gap: 8px; margin-top: 8px;">
+              <input type="text" id="locBuildingInput" class="form-control" placeholder="Building" required>
+              <input type="text" id="locFloorInput" class="form-control" placeholder="Floor">
+            </div>
+            <div class="grid-2" style="gap: 8px; margin-top: 8px;">
+              <input type="text" id="locZoneInput" class="form-control" placeholder="Campus Zone (e.g. North Zone)">
+              <input type="text" id="locContactInput" class="form-control" placeholder="Contact Person">
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm" style="margin-top: 8px; width: 100%;">+ Add Campus Location</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Real-Time System Audit Trail -->
+      <div class="card">
+        <div class="card-title">
+          <span>📜 System Audit Trail (Status History & State Changes)</span>
+          <button class="btn btn-secondary btn-sm" onclick="Admin.loadAuditLogs()">🔄 Refresh Audit</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Food Item</th>
+                <th>Transition</th>
+                <th>Initiated By</th>
+                <th>Audit Notes</th>
+              </tr>
+            </thead>
+            <tbody id="adminAuditLogsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Global Application Modal Container -->
+  <div class="modal-overlay" id="appModal" style="display: none;" onclick="if(event.target === this) App.closeModal();">
+    <div class="modal-card" id="modalContent"></div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <p>
+      <strong>SmartPlate AI</strong> — Turn Surplus Food into Shared Meals | College Project Submission supporting <strong>UN SDG 2: Zero Hunger</strong>
+    </p>
+    <p style="margin-top: 4px; font-size: 0.72rem; color: #94a3b8;">
+      AI Vision Assistant • Honest Quantity Estimation • Concurrency-Protected Volunteer Logistics
+    </p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/staff.js"></script>
+  <script src="/static/js/volunteer.js"></script>
+  <script src="/static/js/admin.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
